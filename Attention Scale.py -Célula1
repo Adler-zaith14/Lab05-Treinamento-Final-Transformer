@@ -1,0 +1,8 @@
+def atencao(q, k, v, mask=None):
+   
+    dk = q.size(-1)
+    scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(dk)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+    pesos = F.softmax(scores, dim=-1)
+    return torch.matmul(pesos, v)
