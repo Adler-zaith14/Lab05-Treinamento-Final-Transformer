@@ -1,0 +1,29 @@
+frase_teste = frases_en[0]
+print(f'Entrada  (EN): {frase_teste}')
+print(f'Esperado (DE): {frases_de[0]}')
+
+enc.eval(); dec.eval()
+emb_enc.eval(); emb_dec.eval()
+pe_enc.eval(); pe_dec.eval()
+
+with torch.no_grad():
+    src_teste   = tokenizar([frase_teste])
+    entrada_enc = pe_enc(emb_enc(src_teste))
+    z_teste     = enc(entrada_enc)
+
+    gerados   = [BOS]
+    dec_input = torch.tensor([[BOS]], dtype=torch.long)
+
+    while len(gerados) < MAX_LEN:
+        entrada = pe_dec(emb_dec(dec_input))
+        logits  = dec(entrada, z_teste)
+        proximo = torch.argmax(logits[0, -1, :]).item()
+
+        if proximo == EOS:
+            break
+
+        gerados.append(proximo)
+        dec_input = torch.tensor([gerados], dtype=torch.long)
+
+traducao = tokenizer.decode(gerados[1:], skip_special_tokens=True)
+print(f'Tradução gerada: {traducao}')
