@@ -1,0 +1,29 @@
+tokenizer = AutoTokenizer.from_pretrained('bert-base-multilingual-cased')
+
+PAD = tokenizer.pad_token_id   
+BOS = tokenizer.cls_token_id   
+EOS = tokenizer.sep_token_id   
+MAX_LEN = 32
+
+def tokenizar(frases, bos=False):
+    ids = tokenizer(
+        frases,
+        padding='max_length',
+        truncation=True,
+        max_length=MAX_LEN,
+        return_tensors='pt'
+    )['input_ids']
+    if bos:
+        bos_col = torch.full((ids.size(0), 1), BOS)
+        ids     = torch.cat([bos_col, ids[:, :-1]], dim=1)
+    return ids
+
+
+frases_en = [x['en'] for x in subset]
+frases_de = [x['de'] for x in subset]
+
+src = tokenizar(frases_en)
+tgt = tokenizar(frases_de, bos=True)
+
+print(f'src shape: {src.shape}')
+print(f'tgt shape: {tgt.shape}')
