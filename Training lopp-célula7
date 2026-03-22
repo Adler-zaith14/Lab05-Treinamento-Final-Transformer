@@ -1,0 +1,57 @@
+D      = 128
+D_FF   = 256
+N      = 2
+H      = 4
+VOCAB  = tokenizer.vocab_size
+EPOCHS = 15
+BATCH  = 32
+LR     = 1e-3
+
+emb_enc = nn.Embedding(VOCAB, D, padding_idx=PAD)
+emb_dec = nn.Embedding(VOCAB, D, padding_idx=PAD)
+pe_enc  = PositionalEncoding(D, max_len=MAX_LEN)
+pe_dec  = PositionalEncoding(D, max_len=MAX_LEN)
+enc     = Encoder(N, D, D_FF, H)
+dec     = Decoder(VOCAB, N, D, D_FF, H)
+
+params = (
+    list(emb_enc.parameters()) +
+    list(emb_dec.parameters()) +
+    list(enc.parameters())     +
+    list(dec.parameters())
+)
+
+otimizador = torch.optim.Adam(params, lr=LR)
+criterio   = nn.CrossEntropyLoss(ignore_index=PAD)
+
+alvo_full = tokenizar(frases_de)
+
+print("--- Início do Treinamento ---")
+for epoca in range(EPOCHS):
+    perda_total = 0
+    n_batches   = 0
+
+    for i in range(0, len(src), BATCH):
+        src_batch = src[i:i+BATCH]
+        tgt_batch = tgt[i:i+BATCH]
+        alvo      = alvo_full[i:i+BATCH]
+
+        entrada_enc = pe_enc(emb_enc(src_batch))
+        z           = enc(entrada_enc)
+
+        entrada_dec = pe_dec(emb_dec(tgt_batch))
+        logits      = dec(entrada_dec, z)
+
+        perda = criterio(
+            logits.reshape(-1, VOCAB),
+            alvo.reshape(-1)
+        )
+
+        otimizador.zero_grad()
+        perda.backward()
+        otimizador.step()
+
+        perda_total += perda.item()
+        n_batches   += 1
+
+    print(f'época {epoca+1:02d}/{EPOCHS} | loss: {perda_total/n_batches:.4f}')
